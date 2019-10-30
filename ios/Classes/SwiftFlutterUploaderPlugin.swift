@@ -34,7 +34,6 @@ public class SwiftFlutterUploaderPlugin: NSObject, FlutterPlugin, URLSessionTask
             self.progress = progress
             self.tag = tag
         }
-
     }
 
     struct UploadFileInfo {
