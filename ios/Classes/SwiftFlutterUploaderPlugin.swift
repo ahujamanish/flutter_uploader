@@ -456,8 +456,11 @@ public class SwiftFlutterUploaderPlugin: NSObject, FlutterPlugin, URLSessionTask
             }
 
             self.sendUploadFailedForTaskId(taskId, inStatus: uploadStatus, statusCode: 500, error: FlutterError(code: "upload_error", message: error?.localizedDescription, details: Thread.callStackSymbols), tag: tag)
-            self.runningTaskById.removeValue(forKey: taskId)
-            self.uploadedData.removeValue(forKey: taskId)
+            
+            self.taskQueue.async {
+                self.runningTaskById.removeValue(forKey: taskId)
+                self.uploadedData.removeValue(forKey: taskId)
+            }
             return
         }
 
@@ -513,8 +516,10 @@ public class SwiftFlutterUploaderPlugin: NSObject, FlutterPlugin, URLSessionTask
             }
         }
 
-        self.uploadedData.removeValue(forKey: taskId)
-        self.runningTaskById.removeValue(forKey: taskId)
+        self.taskQueue.async {
+            self.uploadedData.removeValue(forKey: taskId)
+            self.runningTaskById.removeValue(forKey: taskId)
+        }
 
         let dataString = String(data: data, encoding: String.Encoding.utf8)
         let message = dataString == nil ? "" : dataString!
@@ -559,8 +564,8 @@ public class SwiftFlutterUploaderPlugin: NSObject, FlutterPlugin, URLSessionTask
         }
         let taskId = identifierForTask(uploadTask, withSession: session)
 
-        self.taskQueue.sync {
-          if uploadedData.contains(where: { (key, _) in
+        self.taskQueue.async {
+          if self.uploadedData.contains(where: { (key, _) in
                       return key == taskId
           }) {
               NSLog("URLSessionDidReceiveData: existing data with \(taskId)")
@@ -618,7 +623,7 @@ public class SwiftFlutterUploaderPlugin: NSObject, FlutterPlugin, URLSessionTask
 
                 if isRunning(Int(progress), runningTask!.progress, SwiftFlutterUploaderPlugin.STEP_UPDATE) {
                     
-                    self.taskQueue.sync {
+                    self.taskQueue.async {
                         self.sendUpdateProgressForTaskId(taskId, inStatus: .running, andProgress: Int(progress), andTag: runningTask?.tag)
                         self.runningTaskById[taskId] = UploadTask(taskId: taskId, status: .running, progress: Int(progress), tag: runningTask?.tag)
                     }
