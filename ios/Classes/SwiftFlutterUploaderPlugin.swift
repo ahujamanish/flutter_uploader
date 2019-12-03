@@ -552,27 +552,31 @@ public class SwiftFlutterUploaderPlugin: NSObject, FlutterPlugin, URLSessionTask
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         NSLog("URLSessionDidReceiveData:")
 
+       
         guard let uploadTask = dataTask as? URLSessionUploadTask else {
             NSLog("URLSessionDidReceiveData: not an uplaod task")
             return
         }
         let taskId = identifierForTask(uploadTask, withSession: session)
 
-        if uploadedData.contains(where: { (key, _) in
-            return key == taskId
-        }) {
-            NSLog("URLSessionDidReceiveData: existing data with \(taskId)")
-            if data.count > 0 {
-                self.uploadedData[taskId]?.append(data)
-            }
-        } else {
-            var udata = Data()
-            if(data.count > 0) {
-                udata.append(data)
-            }
+        self.taskQueue.sync {
+          if uploadedData.contains(where: { (key, _) in
+                      return key == taskId
+          }) {
+              NSLog("URLSessionDidReceiveData: existing data with \(taskId)")
+              if data.count > 0 {
+                  self.uploadedData[taskId]?.append(data)
+              }
+          } else {
+              var udata = Data()
+              if(data.count > 0) {
+                  udata.append(data)
+              }
 
-            self.uploadedData[taskId] = udata
+              self.uploadedData[taskId] = udata
+          }
         }
+       
     }
 
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
@@ -613,8 +617,11 @@ public class SwiftFlutterUploaderPlugin: NSObject, FlutterPlugin, URLSessionTask
                 }
 
                 if isRunning(Int(progress), runningTask!.progress, SwiftFlutterUploaderPlugin.STEP_UPDATE) {
-                    self.sendUpdateProgressForTaskId(taskId, inStatus: .running, andProgress: Int(progress), andTag: runningTask?.tag)
-                    self.runningTaskById[taskId] = UploadTask(taskId: taskId, status: .running, progress: Int(progress), tag: runningTask?.tag)
+                    
+                    self.taskQueue.sync {
+                        self.sendUpdateProgressForTaskId(taskId, inStatus: .running, andProgress: Int(progress), andTag: runningTask?.tag)
+                        self.runningTaskById[taskId] = UploadTask(taskId: taskId, status: .running, progress: Int(progress), tag: runningTask?.tag)
+                    }
                 }
             }
         }
