@@ -59,6 +59,7 @@ public class UploadWorker extends Worker implements CountProgressListener {
   private static final String CHANNEL_ID = "FLUTTER_UPLOADER_NOTIFICATION";
   private static final int UPDATE_STEP = 0;
   private static final int DEFAULT_ERROR_STATUS_CODE = 500;
+  private static final String DEFAULT_MIME_TYPE = "*/*";
 
   private NotificationCompat.Builder builder;
   private boolean showNotification;
@@ -321,11 +322,16 @@ public class UploadWorker extends Worker implements CountProgressListener {
     String extension = MimeTypeMap.getFileExtensionFromUrl(url);
     try {
       if (extension != null && !extension.isEmpty()) {
-        type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.toLowerCase());
+        String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.toLowerCase());
+        if(mimeType != null && !mimeType.isEmpty()) {
+          type = mimeType;
+        }
       }
     } catch (Exception ex) {
       Log.d(TAG, "UploadWorker - GetMimeType", ex);
     }
+
+
 
     return type;
   }
