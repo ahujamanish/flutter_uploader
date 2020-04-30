@@ -611,23 +611,22 @@ public class SwiftFlutterUploaderPlugin: NSObject, FlutterPlugin, URLSessionTask
             let bytesExpectedToSend = Double(integerLiteral: totalBytesExpectedToSend)
             let tBytesSent = Double(integerLiteral: totalBytesSent)
             let progress = round(Double(tBytesSent / bytesExpectedToSend * 100))
-            let runningTask = self.runningTaskById[taskId]
-            NSLog("URLSessionDidSendBodyData: taskId: \(taskId), byteSent: \(bytesSent), totalBytesSent: \(totalBytesSent), totalBytesExpectedToSend: \(totalBytesExpectedToSend), progress:\(progress)")
+            self.taskQueue.async {
+                let runningTask = self.runningTaskById[taskId]
+				NSLog("URLSessionDidSendBodyData: taskId: \(taskId), byteSent: \(bytesSent), totalBytesSent: \(totalBytesSent), totalBytesExpectedToSend: \(totalBytesExpectedToSend), progress:\(progress)")
 
-            if runningTask != nil {
-                let isRunning: (Int, Int, Int) -> Bool = {
-                    (current, previous, step) in
-                    let prev = previous + step
-                    return (current == 0 || current > prev || current >= 100) &&  current != previous
-                }
+				if runningTask != nil {
+					let isRunning: (Int, Int, Int) -> Bool = {
+						(current, previous, step) in
+						let prev = previous + step
+						return (current == 0 || current > prev || current >= 100) &&  current != previous
+					}
 
-                if isRunning(Int(progress), runningTask!.progress, SwiftFlutterUploaderPlugin.STEP_UPDATE) {
-                    
-                    self.taskQueue.async {
-                        self.sendUpdateProgressForTaskId(taskId, inStatus: .running, andProgress: Int(progress), andTag: runningTask?.tag)
-                        self.runningTaskById[taskId] = UploadTask(taskId: taskId, status: .running, progress: Int(progress), tag: runningTask?.tag)
-                    }
-                }
+					if isRunning(Int(progress), runningTask!.progress, SwiftFlutterUploaderPlugin.STEP_UPDATE) {
+						self.sendUpdateProgressForTaskId(taskId, inStatus: .running, andProgress: Int(progress), andTag: runningTask?.tag)
+						self.runningTaskById[taskId] = UploadTask(taskId: taskId, status: .running, progress: Int(progress), tag: runningTask?.tag)
+					}
+				}
             }
         }
     }
