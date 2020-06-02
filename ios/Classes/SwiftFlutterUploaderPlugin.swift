@@ -129,6 +129,7 @@ public class SwiftFlutterUploaderPlugin: NSObject, FlutterPlugin, URLSessionTask
         let sessionConfiguration = URLSessionConfiguration.background(withIdentifier: SwiftFlutterUploaderPlugin.KEY_BACKGROUND_SESSION_IDENTIFIER)
         sessionConfiguration.httpMaximumConnectionsPerHost = maxConcurrentTasks.intValue
         sessionConfiguration.timeoutIntervalForRequest = timeout
+		sessionConfiguration.timeoutIntervalForResource = timeout
         self.session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: queue)
     }
 
